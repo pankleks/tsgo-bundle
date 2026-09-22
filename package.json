@@ -1,0 +1,34 @@
+{
+  "name": "tsgo-bundle",
+  "version": "1.0.0",
+  "description": "Single-file bundler for TypeScript global-script (namespace) projects compiled with tsgo. Drop-in replacement for the removed tsc outFile option.",
+  "author": "Krzysztof Heim",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "tsgo-bundle": "./bin/cli.cjs"
+  },
+  "main": "./lib/index.cjs",
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@jridgewell/sourcemap-codec": "1.6.0"
+  },
+  "peerDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260707.2"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
+    "vitest": "5.0.1"
+  }
+}
