@@ -54,9 +54,9 @@ describe("build integration", () => {
         build(config(root), options);
         fs.writeFileSync(path.join(root, "bad.ts"), `namespace App {\n    export const bad: number = "nope";\n}\n`);
         const retry = { root, compiler, only: [], watch: false, force: false };
-        expect(() => build(config(root), retry)).toThrow(/tsgo failed for M/);
+        expect(() => build(config(root), retry)).toThrow(/tsc failed for M/);
         // A still-broken build must fail again, never silently skip as green.
-        expect(() => build(config(root), retry)).toThrow(/tsgo failed for M/);
+        expect(() => build(config(root), retry)).toThrow(/tsc failed for M/);
         fs.rmSync(path.join(root, "bad.ts"));
         build(config(root), retry);
         rmWorkspace(root);
@@ -73,8 +73,8 @@ describe("build integration", () => {
         fs.writeFileSync(path.join(root, "bad.ts"), `namespace App {\n    export const bad: number = "nope";\n}\n`);
         const retry = { root, compiler, only: [], watch: false, force: false };
         // Nothing is emitted on error, so the bundle step reports the missing
-        // emit instead of the tsgo failure; either way it must stay loud.
-        expect(() => build(config(root, { noEmitOnError: true }), retry)).toThrow(/tsgo failed for M|Missing emit/);
+        // emit instead of the tsc failure; either way it must stay loud.
+        expect(() => build(config(root, { noEmitOnError: true }), retry)).toThrow(/tsc failed for M|Missing emit/);
         expect(fs.readFileSync(js, "utf8")).toBe(before);
         fs.rmSync(path.join(root, "bad.ts"));
         build(config(root, { noEmitOnError: true }), retry);

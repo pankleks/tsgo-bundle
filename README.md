@@ -1,16 +1,16 @@
 # tsgo-bundle
 
-Single-file bundler for TypeScript **global-script** (`namespace`) projects compiled with [tsgo](https://github.com/microsoft/typescript-go) (`@typescript/native-preview`). A drop-in replacement for the removed tsc `outFile` option — without migrating a large codebase to ES modules.
+Single-file bundler for TypeScript **global-script** (`namespace`) projects compiled with TypeScript 7's native [`tsc`](https://www.typescriptlang.org/). A drop-in replacement for the removed tsc `outFile` option — without migrating a large codebase to ES modules.
 
 How it works: each project is compiled per-file (`outDir`, never `outFile`), then concatenated reference-first with merged source maps. Chunk order additionally guarantees every base class evaluates before its subclasses, so reference cycles cannot silently break the bundle at runtime.
 
 ## Install
 
 ```bash
-npm i -D tsgo-bundle @typescript/native-preview
+npm i -D tsgo-bundle typescript
 ```
 
-`@typescript/native-preview` is a peer dependency (the compiler this tool drives).
+`typescript` is a peer dependency (the compiler this tool drives).
 
 ## Quickstart
 
@@ -68,7 +68,7 @@ CLI: `tsgo-bundle [--config <path>] [--only <name>[,<name>...]] [--watch] [--for
 
 ## Gotchas
 
-- New `@types/*` package: tsgo does **not** auto-include `@types` (tsc did). Add it to `types` in every tsconfig used here, or only the tsgo build breaks with `Cannot find name`.
+- New `@types/*` package: TypeScript 7 does **not** auto-include `@types`. Add it to `types` in every tsconfig used here, or the build breaks with `Cannot find name`.
 - `mapStyle: "inline"` embeds the map as a data URL (good for distributed scripts); `"external"` writes a sibling `.map` (good for local development).
 - Decorator arguments and top-level executable statements referencing same-bundle values are not part of ordering analysis (only `extends` is). Keep eval-time values in leaf files.
 

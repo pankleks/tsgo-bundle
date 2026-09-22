@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.3
+
+- Use the stable TypeScript 7.0.2 `tsc` compiler instead of `@typescript/native-preview`.
+
 ## 1.1.2
 
 - Fix `orderedSources` returning an empty source list on Windows: tsgo `--listFilesOnly` prints forward-slash paths (`C:/...`) while `root` uses backslashes (`C:\...`), so the raw `startsWith(root)` filter never matched. Paths are now compared via a new `isInside` helper that resolves both sides first.

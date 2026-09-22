@@ -90,7 +90,7 @@ describe("watch", () => {
             count = watcher.completed;
             await settle(
                 () => fs.writeFileSync(probe, 'namespace App { export const watchProbe: number = "bad"; }\n'),
-                () => expect.poll(() => watcher.output, { timeout: 5000 }).toContain("tsgo failed for M"),
+                () => expect.poll(() => watcher.output, { timeout: 5000 }).toContain("tsc failed for M"),
             );
             expect(await bundle()).toContain('watchProbe = "first"');
             count = watcher.completed;
