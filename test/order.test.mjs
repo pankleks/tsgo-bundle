@@ -39,11 +39,11 @@ describe("orderedSources", () => {
 
     test("heritage without any reference edge is still ordered", { timeout: 30000 }, () => {
         root = mkWorkspace({
-            "z-sub.ts": `namespace App { export class Sub extends Base {} }\n`,
-            "a-base.ts": `namespace App { export class Base {} }\n`,
+            "a-sub.ts": `namespace App { export class Sub extends Base {} }\n`,
+            "z-base.ts": `namespace App { export class Base {} }\n`,
         });
         writeTsconfig(root);
-        expect(rel(root, orderedSources(project("P"), compiler, root, silent))).toEqual(["a-base.ts", "z-sub.ts"]);
+        expect(rel(root, orderedSources(project("P"), compiler, root, silent))).toEqual(["z-base.ts", "a-sub.ts"]);
         rmWorkspace(root);
         root = null;
     });

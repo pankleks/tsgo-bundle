@@ -45,7 +45,7 @@ async function main(argv) {
     options.root = root;
     options.compiler = compiler;
     if (options.watch)
-        await watch(config, options);
+        return await watch(config, options);
     run(config, options);
 }
 

@@ -99,6 +99,11 @@ describe("assertGlobalScript", () => {
         ["indented export", "(function (Pulsar) {\n    export class Foo {}\n})(Pulsar);", false],
         ["dynamic import", "const x = await import(\"y\");", false],
         ["property named export", "o.export = true;", false],
+        ["indented top-level export", "  export const x = 1;", true],
+        ["type-only import", "import type { T } from 'types';", true],
+        ["template text", "const text = `\nexport hello\n/// <reference path=\"missing.ts\" />\n`;", false],
+        ["regex and string", "const r = /export class Base/; const s = '/*';", false],
+        ["namespace export", "namespace A { export class Base {} }", false],
     ];
     for (const [label, text, throws] of cases)
         test(`guard ${throws ? "flags" : "passes"}: ${label}`, () => {
@@ -170,7 +175,8 @@ describe("bundle", () => {
         emit(root);
         const
             project = baseProject(),
-            order = orderedSources(project, compiler, root, () => { });
+            order = Object.keys({ ...SOURCES, "m.ts": "" }).map(file => path.join(root, file));
+        expect(() => orderedSources(project, compiler, root, () => { })).toThrow(/ES module syntax.*m\.ts/);
         expect(() => bundle(project, order, ".js", path.join(root, project.js), root)).toThrow(/ES module syntax.*m\.ts/);
         rmWorkspace(root);
         root = null;

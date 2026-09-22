@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.2.0
+
+- Reuse input hashes on incremental rebuilds and skip merging unchanged declaration bundles/maps, checking output integrity and respecting embedded sources and `--force`.
+- Collect declaration emit hashes from bytes already read during merging; document measured incremental gains and cold-build tradeoffs.
+- Add a reproducible performance benchmark for cold/no-op/touch/edit/watch, phase timings and parent-process peak RSS, with documented 200/1000-file baselines.
+- Replace regex-based heritage/reference/module analysis with the TypeScript 7 AST and symbol checker, isolated in a worker using the existing compiler peer.
+- Resolve global classes, nested namespaces, lexical shadowing, Unicode identifiers and internal aliases; reject unsupported dynamic heritage explicitly.
+- Reject source modules even after CommonJS or type-only transformations; add executable bundle regressions using `node:vm`.
+- Validate all `--force` cleanup paths before modifying any project, protecting source/config inputs, other projects and symlinked paths.
+- Share cache/watch input definitions; watch declarations, external dependencies and extra files, and refresh subscriptions after builds and config reloads.
+- Reload the CommonJS bundler configuration and its dependencies in watch mode, with recovery after configuration errors.
+- Clean only once for `--watch --force`; expose `watch().close()` and recover from replaced watch directories and edits during compilation.
+- Watch integration tests now require a single filesystem mutation to be observed instead of retrying mutations.
+- Keep compiler/bundler stamps and configuration fingerprints per project, including builds selected with `--only`.
+- Track tsconfigs, inherited JSONC/package configs, compiler-discovered declarations, package manifests and workspace lockfiles as incremental inputs.
+- Invalidate project state before rebuilding so failed builds cannot leave stale bundles after source changes are reverted.
+- Snapshot inputs before compilation and avoid caching builds whose inputs changed during compilation.
+- Bump the state format to version 2; existing version 1 caches rebuild automatically.
+
 ## 1.1.3
 
 - Use the stable TypeScript 7.0.2 `tsc` compiler instead of `@typescript/native-preview`.
