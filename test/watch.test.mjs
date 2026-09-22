@@ -28,6 +28,13 @@ function startWatch(workspace) {
     return {
         get output() { return output; },
         get completed() { return output.split("Build complete.").length - 1; },
+        get status() {
+            if (child.exitCode !== null)
+                return `exited with code ${child.exitCode}`;
+            if (child.signalCode !== null)
+                return `killed by signal ${child.signalCode}`;
+            return "still running";
+        },
         async stop() {
             if (child.exitCode !== null || child.signalCode !== null)
                 return;
@@ -65,8 +72,10 @@ describe("watch", () => {
                         return;
                     }
                     catch (error) {
-                        if (Date.now() >= deadline)
+                        if (Date.now() >= deadline) {
+                            error.message += `\nWatcher child ${watcher.status}, output tail:\n${watcher.output.slice(-3000)}`;
                             throw error;
+                        }
                     }
                 }
             };
