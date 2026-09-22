@@ -6,8 +6,10 @@ const
 
 function mkWorkspace(files) {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "tsgo-bundle-test-"));
-    for (const [rel, content] of Object.entries(files))
+    for (const [rel, content] of Object.entries(files)) {
+        fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
         fs.writeFileSync(path.join(root, rel), content);
+    }
     return root;
 }
 

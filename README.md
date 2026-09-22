@@ -63,7 +63,7 @@ CLI: `tsgo-bundle [--config <path>] [--only <name>[,<name>...]] [--watch] [--for
 - **Sources stay global scripts.** Any top-level `import`/`export` in program sources fails the build loudly (`ES module syntax in …`) instead of breaking the bundle at runtime. `implements` and type-only usages are fine.
 - **Chunk order is reference-first**, with class heritage (`extends`) enforced on top: every base class is bundled before its subclasses — even without a `/// <reference>` edge (which is then added to the ordering graph automatically).
 - **Reference cycles are broken deterministically**: non-heritage `/// <reference>` hints inside a cycle are dropped (logged as `cycle: ignoring ordering hint …`). A heritage-only cycle cannot be ordered and fails the build with the file list instead of crashing in the browser.
-- **Incremental by content hash** (like `tsc -b`, but hash-checked): unchanged builds skip in milliseconds, mere touches without content change skip too, `--force` wipes emit and rebuilds cold.
+- **Incremental by content hash** (like `tsc -b`, but hash-checked): unchanged builds skip in milliseconds, mere touches without content change skip too, `--force` wipes emit and rebuilds cold. Failed builds never update the incremental state, so a retry rebuilds (and fails again) instead of skipping.
 - Configs usually keep `noEmitOnError: false`: bundles refresh even with type errors, but the exit code is nonzero — check it, not artifact presence.
 
 ## Gotchas

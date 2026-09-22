@@ -57,6 +57,32 @@ function expectedChunks(root, project, order) {
     });
 }
 
+// Every merged segment must equal its per-file segment shifted by chunk offset.
+function expectFaithfulMap(root, project, order, jsFile, inlineMap) {
+    const
+        map = inlineMap || JSON.parse(fs.readFileSync(jsFile + ".map", "utf8")),
+        merged = decode(map.mappings);
+    let lineOffset = 0, checked = 0;
+    for (const source of order) {
+        const
+            emitted = path.join(root, project.outDir, path.relative(path.join(root, project.rootDir), source).replace(/\.ts$/, ".js")),
+            parsed = JSON.parse(fs.readFileSync(emitted + ".map", "utf8")),
+            lines = decode(parsed.mappings),
+            rebase = original => path.relative(path.dirname(jsFile), path.resolve(path.dirname(emitted), parsed.sourceRoot || "", original)).split(path.sep).join("/");
+        for (let li = 0; li < lines.length; li++) {
+            expect(merged[li + lineOffset].length).toBe(lines[li].length);
+            for (let i = 0; i < lines[li].length; i++) {
+                const [sa, sb] = [lines[li][i], merged[li + lineOffset][i]];
+                const norm = (seg, sources, names) => seg.length === 1 ? seg : [seg[0], sources[seg[1]], seg[2], seg[3], ...(seg.length > 4 ? [names[seg[4]]] : [])];
+                expect(norm(sb, map.sources, map.names)).toEqual(norm(sa, parsed.sources, parsed.names).map((v, k) => k === 1 ? rebase(parsed.sources[sa[1]]) : v));
+                checked++;
+            }
+        }
+        lineOffset += expectedChunks(root, project, [source])[0].split("\n").length - 1;
+    }
+    return checked;
+}
+
 describe("assertGlobalScript", () => {
     const cases = [
         ["export class", "export class Foo {}", true],
@@ -102,29 +128,7 @@ describe("bundle", () => {
             expected = expectedChunks(root, project, order).join("") + `//# sourceMappingURL=${path.basename(project.js)}.map\n`,
             actual = fs.readFileSync(path.join(root, project.js), "utf8");
         expect(actual).toBe(expected);
-
-        const
-            map = JSON.parse(fs.readFileSync(path.join(root, project.js + ".map"), "utf8")),
-            merged = decode(map.mappings);
-        let lineOffset = 0, checked = 0;
-        for (const source of order) {
-            const
-                emitted = path.join(root, project.outDir, path.relative(path.join(root, project.rootDir), source).replace(/\.ts$/, ".js")),
-                parsed = JSON.parse(fs.readFileSync(emitted + ".map", "utf8")),
-                lines = decode(parsed.mappings),
-                rebase = original => path.relative(path.dirname(path.join(root, project.js)), path.resolve(path.dirname(emitted), parsed.sourceRoot || "", original)).split(path.sep).join("/");
-            for (let li = 0; li < lines.length; li++) {
-                expect(merged[li + lineOffset].length).toBe(lines[li].length);
-                for (let i = 0; i < lines[li].length; i++) {
-                    const [sa, sb] = [lines[li][i], merged[li + lineOffset][i]];
-                    const norm = (seg, sources, names) => seg.length === 1 ? seg : [seg[0], sources[seg[1]], seg[2], seg[3], ...(seg.length > 4 ? [names[seg[4]]] : [])];
-                    expect(norm(sb, map.sources, map.names)).toEqual(norm(sa, parsed.sources, parsed.names).map((v, k) => k === 1 ? rebase(parsed.sources[sa[1]]) : v));
-                    checked++;
-                }
-            }
-            lineOffset += expectedChunks(root, project, [source])[0].split("\n").length - 1;
-        }
-        expect(checked).toBeGreaterThan(10);
+        expect(expectFaithfulMap(root, project, order, path.join(root, project.js))).toBeGreaterThan(10);
         rmWorkspace(root);
         root = null;
     });
@@ -156,6 +160,7 @@ describe("bundle", () => {
         expect(fs.existsSync(path.join(root, project.js + ".map"))).toBe(false);
         const map = JSON.parse(Buffer.from(text.match(/^\/\/# sourceMappingURL=data:application\/json;base64,(.+)$/m)[1], "base64").toString("utf8"));
         expect(map.sources.length).toBeGreaterThan(0);
+        expect(expectFaithfulMap(root, project, order, path.join(root, project.js), map)).toBeGreaterThan(10);
         rmWorkspace(root);
         root = null;
     });

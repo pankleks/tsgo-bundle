@@ -48,8 +48,18 @@ describe("orderedSources", () => {
         root = null;
     });
 
-    test("reference cycle breaks towards heritage, drops the dead hint", { timeout: 30000 }, () => {
+    test("filename order does not matter, references do", { timeout: 30000 }, () => {
         root = mkWorkspace({
+            "Planck/ADerived.ts": '/// <reference path="ZBase.ts"/>\nnamespace Planck { export class TestDerived extends TestBase {} }\n',
+            "Planck/ZBase.ts": `namespace Planck { export class TestBase { value = 42; } }\n`,
+        });
+        writeTsconfig(root);
+        expect(rel(root, orderedSources(project("P"), compiler, root, silent))).toEqual(["Planck/ZBase.ts", "Planck/ADerived.ts"]);
+        rmWorkspace(root);
+        root = null;
+    });
+
+    test("reference cycle breaks towards heritage, drops the dead hint", { timeout: 30000 }, () => {        root = mkWorkspace({
             "entity.ts": `///<reference path="base.ts"/>\nnamespace D { export class Project extends UnitBase {} }\n`,
             "base.ts": `///<reference path="entity.ts"/>\nnamespace D { export class UnitBase {} }\n`,
         });

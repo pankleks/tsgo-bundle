@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Failed builds no longer update the incremental state: retrying a still-broken build fails again instead of silently skipping as up to date.
+
 ## 1.1.0
 
 - New per-project `sourcesContent` option (default `false`): embed on-disk sources in merged maps. Enable it for self-contained distributed bundles and source-mapped coverage; leave it off for local development maps.
