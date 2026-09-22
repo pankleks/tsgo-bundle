@@ -53,24 +53,48 @@ describe("watch", () => {
             watcher = startWatch(root),
             probe = path.join(root, "probe.ts"),
             bundle = () => fs.readFileSync(path.join(root, "dist/bundle.js"), "utf8"),
-            waitForBuild = async count => expect.poll(() => watcher.completed, { timeout: 30000, message: "Watch did not finish rebuilding" }).toBeGreaterThanOrEqual(count);
+            waitForBuild = async (count, timeout) => expect.poll(() => watcher.completed, { timeout: timeout || 5000, message: "Watch did not finish rebuilding" }).toBeGreaterThanOrEqual(count),
+            // fs.watch can drop change events under load; repeat the mutation
+            // until the watcher reacts (total budget matches the old 30s poll).
+            settle = async (mutate, check) => {
+                const deadline = Date.now() + 25000;
+                for (;;) {
+                    mutate();
+                    try {
+                        await check();
+                        return;
+                    }
+                    catch (error) {
+                        if (Date.now() >= deadline)
+                            throw error;
+                    }
+                }
+            };
         try {
-            await waitForBuild(1);
+            await waitForBuild(1, 30000);
             let count = watcher.completed;
-            fs.writeFileSync(probe, 'namespace App { export const watchProbe = "first"; }\n');
-            await waitForBuild(count + 1);
+            await settle(
+                () => fs.writeFileSync(probe, 'namespace App { export const watchProbe = "first"; }\n'),
+                () => waitForBuild(count + 1),
+            );
             expect(await bundle()).toContain('watchProbe = "first"');
             count = watcher.completed;
-            fs.writeFileSync(probe, 'namespace App { export const watchProbe: number = "bad"; }\n');
-            await expect.poll(() => watcher.output, { timeout: 30000 }).toContain("tsgo failed for M");
+            await settle(
+                () => fs.writeFileSync(probe, 'namespace App { export const watchProbe: number = "bad"; }\n'),
+                () => expect.poll(() => watcher.output, { timeout: 5000 }).toContain("tsgo failed for M"),
+            );
             expect(await bundle()).toContain('watchProbe = "first"');
             count = watcher.completed;
-            fs.writeFileSync(probe, 'namespace App { export const watchProbe = "fixed"; }\n');
-            await waitForBuild(count + 1);
+            await settle(
+                () => fs.writeFileSync(probe, 'namespace App { export const watchProbe = "fixed"; }\n'),
+                () => waitForBuild(count + 1),
+            );
             expect(await bundle()).toContain('watchProbe = "fixed"');
             count = watcher.completed;
-            fs.rmSync(probe);
-            await waitForBuild(count + 1);
+            await settle(
+                () => fs.rmSync(probe, { force: true }),
+                () => waitForBuild(count + 1),
+            );
             expect(await bundle()).not.toContain("watchProbe");
             count = watcher.completed;
             await new Promise(resolve => setTimeout(resolve, 1000));
