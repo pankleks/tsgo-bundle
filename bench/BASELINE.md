@@ -132,3 +132,36 @@ positions can change declaration maps even if the public types are identical.
 This improves incremental latency, with a measured small cold-build cost. It does
 not eliminate the extra compiler processes or all scans; those remain future
 optimization candidates rather than claimed improvements.
+
+## Step 7: stale-emit guard and bundle micro-optimization
+
+The stale declaration-emit guard (`shadowDeclarations`/`excludedSiblings`) initially
+resolved every program file through `realpath` once per check pass (four passes per
+build, called twice: pre-emit and during ordering). Measured on a real 1433-file
+project (1767 program files), one guard call cost 811 ms with 14,136 `realpath`
+calls; a full build paid it three times (~2.4 s).
+
+The guard now classifies the program in a single fused pass with a memoized
+workspace root (one `realpath` per file), memoizes the result per file-list
+identity so the pre-emit and ordering checks share it, and the ordering filter
+reuses the classified sources instead of re-resolving every path. Repeat checks
+of the same listing cost ~0 ms. Bundle concatenation counts newlines with an
+`indexOf` scan instead of allocating a split line array per chunk.
+
+Targeted profiler on the same 1433-file project (median of repeated runs,
+`tsc` emit excluded as external):
+
+| Phase | Before | After |
+|---|---:|---:|
+| Guard, first call (1767 files) | 811 ms / 14,136 realpaths | 115–123 ms / 1,768 realpaths |
+| Guard, repeat call (same list) | ~800 ms | ~0 ms |
+| Ordering incl. syntax worker | ~1.8–2.1 s | ~0.8 s |
+| JS bundle | ~424 ms | ~380 ms |
+| Declaration bundle | ~710–790 ms (noise-dominated) | ~710–790 ms |
+
+`scanInputs` + cold content hashing (~140 ms walk + ~494 ms hash of 2164 inputs)
+is unchanged: reuse keeps the incremental cost at ~1 ms, and the cold hash is
+paid once per `--force`/cache-version change. `programFiles` (~300 ms `tsc
+--listFilesOnly`) and the syntax worker remain; a persistent compiler session
+is still future work per the candidates above. Full suite: 95/95 pass, and the
+guard reports clean (0 shadows, 0 excluded) on both real projects.

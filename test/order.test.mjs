@@ -1,4 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from "vitest";
+import fs from "node:fs";
 import path from "node:path";
 import helpers from "./helpers.cjs";
 import orderLib from "../lib/order.cjs";
@@ -6,7 +7,7 @@ import resolverLib from "../lib/resolve-compiler.cjs";
 
 const
     { mkWorkspace, writeTsconfig, rmWorkspace } = helpers,
-    { orderedSources, heritageEdges, breakCycles, stronglyConnected } = orderLib,
+    { orderedSources, shadowDeclarations, excludedSiblings, assertNoShadowDeclarations, heritageEdges, breakCycles, stronglyConnected } = orderLib,
     { resolveCompiler } = resolverLib;
 
 let compiler = null;
@@ -89,6 +90,114 @@ describe("orderedSources", () => {
         });
         writeTsconfig(root);
         expect(() => orderedSources(project("P"), compiler, root, silent)).toThrow(/Reference outside/);
+        rmWorkspace(root);
+        root = null;
+    });
+
+    test("stale declaration emit beside its source fails fast", { timeout: 30000 }, () => {
+        // Mirrors the real-world trigger: entity files like Data.Test.ts collide
+        // with the lowercase "**/*.test.ts" test-file exclude (case-insensitive
+        // on Windows), so the source survives only via "files" while its stale
+        // sibling slips in via "include" and tsc lists both.
+        root = mkWorkspace({
+            "Data.Test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
+            "Data.Test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
+        });
+        fs.writeFileSync(path.join(root, "tsconfig.json"), JSON.stringify({
+            compilerOptions: { target: "es2020", types: [] },
+            include: ["**/*.ts"],
+            files: ["./Data.Test.ts"],
+            exclude: ["**/*.test.ts"],
+        }));
+        expect(() => orderedSources(project("P"), compiler, root, silent)).toThrow(/Stale declaration emit in P.*Data\.Test\.ts shadowed by Data\.Test\.d\.ts/s);
+        rmWorkspace(root);
+        root = null;
+    });
+});
+
+describe("shadowDeclarations", () => {
+    let root = null;
+    afterAll(() => {
+        if (root != null)
+            rmWorkspace(root);
+    });
+
+    test("reports Foo.ts shadowed by Foo.d.ts", () => {
+        root = mkWorkspace({
+            "a.ts": `namespace App { export class Base {} }\n`,
+            "a.d.ts": `declare namespace App { class Base {} }\n`,
+        });
+        const files = [path.join(root, "a.ts"), path.join(root, "a.d.ts")];
+        expect(shadowDeclarations(files, root)).toEqual([[path.join(root, "a.ts"), path.join(root, "a.d.ts")]]);
+        expect(() => assertNoShadowDeclarations(files, project("P"), root)).toThrow(/Stale declaration emit in P.*a\.ts shadowed by a\.d\.ts/s);
+        rmWorkspace(root);
+        root = null;
+    });
+
+    test("repeated checks of the same file list reuse the cached classification", () => {
+        root = mkWorkspace({
+            "a.ts": `namespace App { export class Base {} }\n`,
+            "a.d.ts": `declare namespace App { class Base {} }\n`,
+            "types/api.d.ts": `declare const value: number;\n`,
+        });
+        const
+            expected = [[path.join(root, "a.ts"), path.join(root, "a.d.ts")]],
+            files = [path.join(root, "a.ts"), path.join(root, "a.d.ts"), path.join(root, "types/api.d.ts")];
+        expect(shadowDeclarations(files, root)).toEqual(expected);
+        expect(shadowDeclarations(files, root)).toEqual(expected);
+        expect(excludedSiblings(files, root)).toEqual([]);
+        expect(excludedSiblings(files, root)).toEqual([]);
+        expect(() => assertNoShadowDeclarations(files, project("P"), root)).toThrow(/Stale declaration emit in P/s);
+        rmWorkspace(root);
+        root = null;
+    });
+
+    test("standalone declarations without a sibling source are fine", () => {
+        root = mkWorkspace({
+            "a.ts": `namespace App { export class Base {} }\n`,
+            "types/api.d.ts": `declare const value: number;\n`,
+        });
+        const files = [path.join(root, "a.ts"), path.join(root, "types/api.d.ts")];
+        expect(shadowDeclarations(files, root)).toEqual([]);
+        expect(() => assertNoShadowDeclarations(files, project("P"), root)).not.toThrow();
+        rmWorkspace(root);
+        root = null;
+    });
+
+    test("files outside the workspace are ignored", () => {
+        root = mkWorkspace({
+            "a.ts": `namespace App { export class Base {} }\n`,
+        });
+        const outside = path.resolve(root, "..", "outside-a.ts");
+        expect(shadowDeclarations([path.join(root, "a.ts"), outside], root)).toEqual([]);
+        rmWorkspace(root);
+        root = null;
+    });
+
+    test("source excluded but stale emit listed fails fast", () => {
+        root = mkWorkspace({
+            "Data.Test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
+            "Data.Test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
+        });
+        const onlyDeclaration = [path.join(root, "Data.Test.d.ts")];
+        expect(shadowDeclarations(onlyDeclaration, root)).toEqual([]);
+        expect(excludedSiblings(onlyDeclaration, root)).toEqual([[path.join(root, "Data.Test.ts"), path.join(root, "Data.Test.d.ts")]]);
+        expect(() => assertNoShadowDeclarations(onlyDeclaration, project("P"), root)).toThrow(/excluded from the program but shadowed by/s);
+        rmWorkspace(root);
+        root = null;
+    });
+
+    test("orderedSources fails fast when the source is excluded and only its stale emit is listed", { timeout: 30000 }, () => {
+        root = mkWorkspace({
+            "Data.Test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
+            "Data.Test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
+        });
+        fs.writeFileSync(path.join(root, "tsconfig.json"), JSON.stringify({
+            compilerOptions: { target: "es2020", types: [] },
+            include: ["**/*.ts"],
+            exclude: ["**/*.test.ts"],
+        }));
+        expect(() => orderedSources(project("P"), compiler, root, silent)).toThrow(/excluded from the program but shadowed by/s);
         rmWorkspace(root);
         root = null;
     });

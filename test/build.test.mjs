@@ -242,6 +242,24 @@ describe("build integration", () => {
         root = null;
     });
 
+    test("stale sibling declaration fails fast with an actionable error", { timeout: 30000 }, () => {
+        // Same trigger as the orderedSources test: Data.Test.ts collides with
+        // the lowercase test-file exclude, surviving only via "files" while
+        // the stale Data.Test.d.ts slips in via "include".
+        root = mkWorkspace({
+            "Data.Test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
+            "Data.Test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
+        });
+        const cfg = config(root), options = { root, compiler };
+        const tsconfigFile = path.join(root, "tsconfig.json"), tsconfig = JSON.parse(fs.readFileSync(tsconfigFile, "utf8"));
+        tsconfig.files = ["./Data.Test.ts"];
+        tsconfig.exclude = ["**/*.test.ts", "dist", "out"];
+        fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
+        expect(() => build(cfg, options)).toThrow(/Stale declaration emit in M.*Data\.Test\.ts shadowed by Data\.Test\.d\.ts/s);
+        rmWorkspace(root);
+        root = null;
+    });
+
     test("edits during a build are not cached as already emitted", { timeout: 30000 }, () => {
         root = mkWorkspace(SOURCES);
         const cfg = config(root), options = { root, compiler };

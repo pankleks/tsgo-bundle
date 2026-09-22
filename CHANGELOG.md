@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.1
+
+- Fail fast with an actionable error when a stale declaration emit shadows its source (`Foo.d.ts` beside `Foo.ts` in the program) or when a source is excluded while its stale emit is still listed (e.g. a lowercase `**/*.test.ts` exclude matching `Data.Test.ts`), instead of a cryptic `TS2300`.
+- Classify the program in a single fused pass with memoized paths, shared between the pre-emit check and ordering; count bundle newlines without allocating split arrays.
+- Cover the guard and the cache reuse with unit and integration regressions.
+
 ## 1.2.0
 
 - Reuse input hashes on incremental rebuilds and skip merging unchanged declaration bundles/maps, checking output integrity and respecting embedded sources and `--force`.
