@@ -95,21 +95,23 @@ describe("orderedSources", () => {
     });
 
     test("stale declaration emit beside its source fails fast", { timeout: 30000 }, () => {
-        // Mirrors the real-world trigger: entity files like Data.Test.ts collide
-        // with the lowercase "**/*.test.ts" test-file exclude (case-insensitive
-        // on Windows), so the source survives only via "files" while its stale
-        // sibling slips in via "include" and tsc lists both.
+        // Mirrors the real-world trigger (e.g. an entity file like Data.Test.ts
+        // colliding with the lowercase "**/*.test.ts" test-file exclude, which
+        // matches case-insensitively on Windows/macOS): the source survives only
+        // via "files" while its stale sibling slips in via "include" and tsc
+        // lists both. Lowercase names keep this deterministic on case-sensitive
+        // systems too, where "files" is the only way the source stays listed.
         root = mkWorkspace({
-            "Data.Test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
-            "Data.Test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
+            "data.test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
+            "data.test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
         });
         fs.writeFileSync(path.join(root, "tsconfig.json"), JSON.stringify({
             compilerOptions: { target: "es2020", types: [] },
             include: ["**/*.ts"],
-            files: ["./Data.Test.ts"],
+            files: ["./data.test.ts"],
             exclude: ["**/*.test.ts"],
         }));
-        expect(() => orderedSources(project("P"), compiler, root, silent)).toThrow(/Stale declaration emit in P.*Data\.Test\.ts shadowed by Data\.Test\.d\.ts/s);
+        expect(() => orderedSources(project("P"), compiler, root, silent)).toThrow(/Stale declaration emit in P.*data\.test\.ts shadowed by data\.test\.d\.ts/s);
         rmWorkspace(root);
         root = null;
     });
@@ -188,9 +190,12 @@ describe("shadowDeclarations", () => {
     });
 
     test("orderedSources fails fast when the source is excluded and only its stale emit is listed", { timeout: 30000 }, () => {
+        // Lowercase names so the "**/*.test.ts" exclude matches on every
+        // platform: tsc then lists only the stale emit while the source exists
+        // on disk, and the guard reports the silent drop.
         root = mkWorkspace({
-            "Data.Test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
-            "Data.Test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
+            "data.test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
+            "data.test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
         });
         fs.writeFileSync(path.join(root, "tsconfig.json"), JSON.stringify({
             compilerOptions: { target: "es2020", types: [] },

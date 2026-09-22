@@ -243,19 +243,21 @@ describe("build integration", () => {
     });
 
     test("stale sibling declaration fails fast with an actionable error", { timeout: 30000 }, () => {
-        // Same trigger as the orderedSources test: Data.Test.ts collides with
-        // the lowercase test-file exclude, surviving only via "files" while
-        // the stale Data.Test.d.ts slips in via "include".
+        // Same trigger as the orderedSources test. Lowercase names so the
+        // "**/*.test.ts" exclude collides deterministically on every platform
+        // (on case-insensitive systems the real-world colliding name is an
+        // entity like Data.Test.ts); the source then survives only via "files"
+        // while the stale sibling slips in via "include".
         root = mkWorkspace({
-            "Data.Test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
-            "Data.Test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
+            "data.test.ts": `namespace Pulsar.Data { export class Test { a: number = 1; } }\n`,
+            "data.test.d.ts": `declare namespace Pulsar.Data { class Test { a: number; } }\n`,
         });
         const cfg = config(root), options = { root, compiler };
         const tsconfigFile = path.join(root, "tsconfig.json"), tsconfig = JSON.parse(fs.readFileSync(tsconfigFile, "utf8"));
-        tsconfig.files = ["./Data.Test.ts"];
+        tsconfig.files = ["./data.test.ts"];
         tsconfig.exclude = ["**/*.test.ts", "dist", "out"];
         fs.writeFileSync(tsconfigFile, JSON.stringify(tsconfig));
-        expect(() => build(cfg, options)).toThrow(/Stale declaration emit in M.*Data\.Test\.ts shadowed by Data\.Test\.d\.ts/s);
+        expect(() => build(cfg, options)).toThrow(/Stale declaration emit in M.*data\.test\.ts shadowed by data\.test\.d\.ts/s);
         rmWorkspace(root);
         root = null;
     });
