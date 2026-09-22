@@ -32,6 +32,7 @@ module.exports = {
             dts: "wwwroot/_Public/Components.d.ts", // or null when unneeded
             tsbuildinfo: "wwwroot/.build/Components.tsbuildinfo", // for --force wipe
             mapStyle: "external", // or "inline" (self-contained, for distributed libs)
+            sourcesContent: false, // true embeds on-disk sources (self-contained maps, coverage remapping)
             scanDirs: [{ dir: "wwwroot/Components" }],
             // Test files may live in a second tree:
             // scanDirs: [{ dir: "wwwroot/Tests" }, { dir: "wwwroot/Components", testOnly: true }],

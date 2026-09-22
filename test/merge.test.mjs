@@ -171,6 +171,26 @@ describe("bundle", () => {
         root = null;
     });
 
+    test("sourcesContent embeds on-disk sources when enabled, omitted otherwise", { timeout: 120000 }, () => {
+        root = mkWorkspace(SOURCES);
+        emit(root);
+        const
+            order = orderedSources(baseProject(), compiler, root, () => { }),
+            withContent = path.join(root, "dist/content.js"),
+            plain = path.join(root, "dist/plain.js");
+        bundle(baseProject({ js: "dist/content.js", sourcesContent: true }), order, ".js", withContent, root);
+        bundle(baseProject({ js: "dist/plain.js" }), order, ".js", plain, root);
+        const
+            embedded = JSON.parse(fs.readFileSync(withContent + ".map", "utf8")),
+            omitted = JSON.parse(fs.readFileSync(plain + ".map", "utf8"));
+        expect(embedded.sourcesContent).toHaveLength(embedded.sources.length);
+        for (let i = 0; i < embedded.sources.length; i++)
+            expect(embedded.sourcesContent[i]).toBe(fs.readFileSync(path.resolve(path.dirname(withContent), embedded.sources[i]), "utf8"));
+        expect("sourcesContent" in omitted).toBe(false);
+        rmWorkspace(root);
+        root = null;
+    });
+
     test("missing emit fails with a clear path", () => {
         expect(() => bundle(baseProject(), ["/w/missing.ts"], ".js", "/w/out.js", "/w")).toThrow(/Missing emit/);
     });

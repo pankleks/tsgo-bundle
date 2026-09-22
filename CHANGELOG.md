@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- New per-project `sourcesContent` option (default `false`): embed on-disk sources in merged maps. Enable it for self-contained distributed bundles and source-mapped coverage; leave it off for local development maps.
+- `bundle()` creates the output directory when missing.
+
 ## 1.0.0
 
 - Initial public release.
