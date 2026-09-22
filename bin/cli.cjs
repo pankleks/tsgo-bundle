@@ -15,7 +15,7 @@ function usage() {
     ].join("\n"));
 }
 
-function main(argv) {
+async function main(argv) {
     const
         options = { only: [], watch: false, force: false, config: "tsgo-bundle.config.cjs" };
     for (let i = 0; i < argv.length; i++) {
@@ -45,14 +45,11 @@ function main(argv) {
     options.root = root;
     options.compiler = compiler;
     if (options.watch)
-        watch(config, options);
+        await watch(config, options);
     run(config, options);
 }
 
-try {
-    main(process.argv.slice(2));
-}
-catch (error) {
+main(process.argv.slice(2)).catch(error => {
     console.error(error.message);
     process.exitCode = 1;
-}
+});

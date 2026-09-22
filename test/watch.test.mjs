@@ -61,7 +61,7 @@ describe("watch", () => {
             probe = path.join(root, "probe.ts"),
             bundle = () => fs.readFileSync(path.join(root, "dist/bundle.js"), "utf8"),
             waitForBuild = async (count, timeout) => expect.poll(() => watcher.completed, { timeout: timeout || 5000, message: "Watch did not finish rebuilding" }).toBeGreaterThanOrEqual(count),
-            // fs.watch can drop change events under load; repeat the mutation
+            // The watcher can drop change events under load; repeat the mutation
             // until the watcher reacts (total budget matches the old 30s poll).
             settle = async (mutate, check) => {
                 const deadline = Date.now() + 25000;

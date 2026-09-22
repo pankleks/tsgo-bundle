@@ -22,7 +22,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@jridgewell/sourcemap-codec": "1.6.0"
+    "@jridgewell/sourcemap-codec": "1.6.0",
+    "@parcel/watcher": "^2.6.0"
   },
   "peerDependencies": {
     "@typescript/native-preview": "7.0.0-dev.20260707.2"

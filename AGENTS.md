@@ -18,10 +18,10 @@
 - End every statement with `;`.
 - Prefer `const` and `let`; never use `var`.
 - Related variables share one declaration block (see existing lib files).
-- Library code stays dependency-free except `@jridgewell/sourcemap-codec`; the TypeScript compiler is a peer dependency resolved at runtime with fallbacks.
+- Runtime dependencies are allowed when justified (e.g. `@parcel/watcher` for `--watch`); keep the hot build path (`order`, `merge`, `state`) dependency-free except `@jridgewell/sourcemap-codec`. The TypeScript compiler stays a peer dependency resolved at runtime with fallbacks.
 - No runtime behavior change without a test: ordering, merging, skipping and failure modes are all covered in `./test/`.
 
 ## Scope Notes
 
-- Do not introduce runtime external dependencies into the published bundle path.
+- New runtime dependencies need an isolated use site plus test coverage; verify `npm pack --dry-run`.
 - Keep changes consistent with the style and structure used in existing code.
