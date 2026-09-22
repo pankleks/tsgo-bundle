@@ -1,6 +1,6 @@
 {
   "name": "tsgo-bundle",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Single-file bundler for TypeScript global-script (namespace) projects compiled with tsgo. Drop-in replacement for the removed tsc outFile option.",
   "author": "Krzysztof Heim",
   "license": "MIT",
