@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag to publish (e.g. v1.3.2)"
+        required: true
 
 jobs:
   publish:
@@ -13,12 +18,19 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        if: ${{ inputs.tag == '' }}
+      - uses: actions/checkout@v4
+        if: ${{ inputs.tag != '' }}
+        with:
+          ref: ${{ inputs.tag }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           registry-url: "https://registry.npmjs.org"
-      - run: test "${GITHUB_REF_NAME}" = "v$(node -p "require('./package.json').version")" || (echo "Tag ${GITHUB_REF_NAME} does not match package.json version" && exit 1)
+      - run: test "$TAG" = "v$(node -p "require('./package.json').version")" || (echo "Tag $TAG does not match package.json version" && exit 1)
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
       - run: npm ci
       - run: npm test
       - run: npm publish --provenance
