@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.2
+
+- Delete the project's `tsbuildinfo` before every compiler run, not just `--force`: TypeScript 7 incremental builds can exit 0 without re-reporting semantic errors in unchanged files (e.g. `TS2554` after narrowing a callee signature), and that false success was then cached as up to date — local builds skipped while clean CI builds failed. Rebuilds now always fully type-check; unchanged builds still skip in milliseconds via content hashes. Unsafe `tsbuildinfo` targets fail the build on every run, not just `--force`.
+- Add an integration regression for a definition-only signature change under `incremental` + `composite`, plus safety coverage for the incremental `tsbuildinfo` wipe.
+
 ## 1.3.1
 
 - Fail fast with an actionable error when a stale declaration emit shadows its source (`Foo.d.ts` beside `Foo.ts` in the program) or when a source is excluded while its stale emit is still listed (e.g. a lowercase `**/*.test.ts` exclude matching `Data.Test.ts`), instead of a cryptic `TS2300`.

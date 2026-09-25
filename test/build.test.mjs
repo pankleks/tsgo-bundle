@@ -100,6 +100,36 @@ describe("build integration", () => {
         root = null;
     }, 180000);
 
+    test("definition-only signature change fails despite incremental tsbuildinfo", { timeout: 180000 }, () => {
+        const
+            wide = `namespace App {\n    export class Helper {\n        static async check(a: number, b: string, c: number, d: number, e?: number[]) { return true; }\n    }\n}\n`,
+            narrowed = `namespace App {\n    export class Helper {\n        static async check(c: number, d: number, e?: number[]) { return true; }\n    }\n}\n`,
+            workspace = mkWorkspace({
+                "helper.ts": wide,
+                "caller.ts": `namespace App {\n    export class Caller {\n        async run() { return await Helper.check(1, "a", 2, 3); }\n    }\n}\n`,
+            });
+        const
+            cfg = config(workspace, { incremental: true, composite: true, tsBuildInfoFile: "out.tsbuildinfo" }),
+            options = { root: workspace, compiler, only: [], watch: false, force: false },
+            helper = path.join(workspace, "helper.ts");
+        try {
+            build(cfg, options);
+            expect(fs.existsSync(path.join(workspace, "out.tsbuildinfo"))).toBe(true);
+            fs.writeFileSync(helper, narrowed);
+            // The error lives in the unchanged caller, which incremental tsc
+            // alone does not re-report (exit 0); the bundler must still fail.
+            expect(() => build(cfg, options)).toThrow(/tsc failed for M/);
+            expect(JSON.parse(fs.readFileSync(path.join(workspace, ".build-state/buildstate.json"), "utf8")).projects.M).toBeUndefined();
+            // A still-broken build must fail again, never silently skip as green.
+            expect(() => build(cfg, options)).toThrow(/tsc failed for M/);
+            fs.writeFileSync(helper, wide);
+            build(cfg, options);
+        }
+        finally {
+            rmWorkspace(workspace);
+        }
+    }, 180000);
+
     test("compiler error with noEmitOnError keeps last bundles", { timeout: 180000 }, () => {
         root = mkWorkspace(SOURCES);
         const options = { root, compiler, only: [], watch: false, force: true };

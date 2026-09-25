@@ -30,7 +30,7 @@ module.exports = {
             outDir: "wwwroot/.build/Components",
             js: "wwwroot/_Public/Components.js",
             dts: "wwwroot/_Public/Components.d.ts", // or null when unneeded
-            tsbuildinfo: "wwwroot/.build/Components.tsbuildinfo", // for --force wipe
+            tsbuildinfo: "wwwroot/.build/Components.tsbuildinfo", // wiped before every compiler run
             mapStyle: "external", // or "inline" (self-contained, for distributed libs)
             sourcesContent: false, // true embeds on-disk sources (self-contained maps, coverage remapping)
             scanDirs: [{ dir: "wwwroot/Components" }],
@@ -86,6 +86,15 @@ bundles can also be reused when their emitted files/maps, source order, compiler
 configuration and output hashes match. With `sourcesContent: true` declarations
 are always merged again so embedded source text stays current. `--force` bypasses
 these reuse paths.
+
+The project's `tsbuildinfo` file is deleted before every compiler run, not just
+`--force`: TypeScript 7 incremental builds can exit 0 without re-reporting
+semantic errors in unchanged files (e.g. narrowing a callee signature surfaces
+only at its unchanged callers), and that false success would otherwise be cached
+as up to date. Every rebuild therefore fully type-checks; unchanged builds still
+skip the compiler entirely via content hashes. Keep `tsbuildinfo` configured so
+the wipe target is explicit — a target pointing at a directory or a protected
+input fails the build instead of deleting.
 
 ### Watch and force builds
 

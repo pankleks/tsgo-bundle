@@ -78,6 +78,20 @@ describe("force safety", () => {
         }
     });
 
+    test.each(["src/a.ts", "tsconfig.json", "src"])("rejects unsafe tsbuildinfo %s on incremental builds without deleting", tsbuildinfo => {
+        const root = fixture();
+        const remove = vi.spyOn(fs, "rmSync").mockImplementation(() => { throw new Error("Unexpected deletion"); });
+        try {
+            expect(() => build(config({ tsbuildinfo }), { root, compiler, force: false })).toThrow(/Unsafe build/);
+            expect(remove).not.toHaveBeenCalled();
+            expect(fs.readFileSync(path.join(root, "src/a.ts"), "utf8")).toContain("answer = 42");
+        }
+        finally {
+            remove.mockRestore();
+            rmWorkspace(root);
+        }
+    });
+
     test("protects inherited configs and extra inputs inside an output directory", () => {
         const root = fixture();
         try {

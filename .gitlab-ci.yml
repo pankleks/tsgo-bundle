@@ -1,0 +1,40 @@
+# Test every branch/MR/tag; publish to npm on version tags (vX.Y.Z).
+# Required masked CI/CD variables: NPM_TOKEN.
+# Optional: NPM_REGISTRY (default https://registry.npmjs.org).
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+variables:
+  NPM_REGISTRY: "https://registry.npmjs.org"
+
+stages:
+  - test
+  - publish
+
+test:
+  stage: test
+  image: node:24
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+  script:
+    - npm ci --cache .npm
+    - npm test
+
+publish:
+  stage: publish
+  image: node:24
+  needs: [test]
+  script:
+    - test "$CI_COMMIT_TAG" = "v$(node -p "require('./package.json').version)" || (echo "Tag $CI_COMMIT_TAG does not match package.json version" && exit 1)
+    - printf 'registry=%s/\n%s/:_authToken=%s\n' "${NPM_REGISTRY%/}" "${NPM_REGISTRY#https:}" "${NPM_TOKEN}" > .npmrc
+    - npm publish
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
