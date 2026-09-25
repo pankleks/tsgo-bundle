@@ -13,6 +13,10 @@
 - `npm test`: run the full suite (`vitest run`).
 - `npm pack --dry-run`: verify published file list before release.
 
+## Version Control
+
+- Never commit, tag, or push automatically. Leave all changes uncommitted for the user to review; committing, tagging, and pushing are explicit user actions.
+
 ## Coding Conventions
 
 - End every statement with `;`.
