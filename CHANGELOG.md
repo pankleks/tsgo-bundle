@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.3
+
+- Match class heritage and internal alias dependencies using TypeScript canonical source paths, fixing silently missing ordering edges on case-insensitive macOS filesystems. Add executable mixed-case filename regressions and macOS CI coverage.
+
 ## 1.3.2
 
 - Delete the project's `tsbuildinfo` before every compiler run, not just `--force`: TypeScript 7 incremental builds can exit 0 without re-reporting semantic errors in unchanged files (e.g. `TS2554` after narrowing a callee signature), and that false success was then cached as up to date — local builds skipped while clean CI builds failed. Rebuilds now always fully type-check; unchanged builds still skip in milliseconds via content hashes. Unsafe `tsbuildinfo` targets fail the build on every run, not just `--force`.

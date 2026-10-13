@@ -250,7 +250,8 @@ describe("build integration", () => {
         cfg.projects[0].scanDirs = [{ dir: "src" }];
         build(cfg, options);
         const state = JSON.parse(fs.readFileSync(path.join(root, cfg.stateFile), "utf8"));
-        expect(state.projects.M.dependencies).toContain(path.join(root, "types/api.d.ts"));
+        // macOS may report the canonical /private/var path for a /var fixture.
+        expect(state.projects.M.dependencies.map(file => fs.realpathSync.native(file))).toContain(fs.realpathSync.native(path.join(root, "types/api.d.ts")));
         fs.writeFileSync(path.join(root, "types/api.d.ts"), "type ApiValue = string;");
         expect(() => build(cfg, options)).toThrow(/tsc failed/);
         rmWorkspace(root);

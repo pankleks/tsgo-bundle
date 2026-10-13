@@ -21,6 +21,8 @@ function workspace(files, options = {}) {
 describe("compiler syntax and executable bundles", () => {
     test.each([
         ["global classes", { "a.ts": "class Sub extends Base {}", "z.ts": "class Base { value = 42; }" }, "new Sub().value"],
+        ["mixed-case filenames", { "ASub.ts": "namespace App { export class Sub extends Base {} }", "ZBase.ts": "namespace App { export class Base { value = 42; } }" }, "new App.Sub().value"],
+        ["mixed-case alias filenames", { "ASub.ts": "namespace App { export class Sub extends Alias {} }", "BAlias.ts": "namespace App { export import Alias = Other.Base; }", "ZBase.ts": "namespace Other { export class Base { value = 42; } }" }, "new App.Sub().value"],
         ["nested qualified namespaces", { "a.ts": "namespace Result { export class Sub extends A.B.Base {} }", "z.ts": "namespace A { export namespace B { export class Base { value = 42; } } }" }, "new Result.Sub().value"],
         ["separate namespace scopes", { "a.ts": "namespace A { export class Sub extends Base {} } namespace B { export class Sub extends Base {} }", "y.ts": "namespace A { export class Base { value = 20; } }", "z.ts": "namespace B { export class Base { value = 22; } }" }, "new A.Sub().value + new B.Sub().value"],
         ["lexical shadowing", { "a.ts": "namespace A { class Base { value = 42; } export class Sub extends Base {} }", "z.ts": "namespace A { export class Base { value = 99; } }" }, "new A.Sub().value"],
