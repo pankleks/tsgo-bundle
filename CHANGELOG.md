@@ -2,6 +2,7 @@
 
 ## 1.3.3
 
+- Require Node.js 24 or newer and remove Node.js 22 from CI.
 - Match class heritage and internal alias dependencies using TypeScript canonical source paths, fixing silently missing ordering edges on case-insensitive macOS filesystems. Add executable mixed-case filename regressions and macOS CI coverage.
 
 ## 1.3.2

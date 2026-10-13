@@ -6,7 +6,7 @@
 - `./bin/cli.cjs`: thin CLI (`--config`, `--only`, `--watch`, `--force`).
 - `./lib/`: bundler modules, all CommonJS (`order`, `merge`, `state`, `build`, `guard` in `merge`, `resolve-compiler`, `util`), re-exported from `./lib/index.cjs` for tests.
 - `./test/`: vitest suites (`.test.mjs`, ESM) with tmp fixture workspaces (`./test/helpers.cjs`). Fixtures are generated at runtime, never committed.
-- `./.github/workflows/ci.yml`: node 22/24 x ubuntu/windows/macos.
+- `./.github/workflows/ci.yml`: node 24 x ubuntu/windows/macos.
 
 ## Build Commands
 

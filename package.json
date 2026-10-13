@@ -9,7 +9,7 @@
   "author": "Krzysztof Heim",
   "license": "MIT",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "bin": {
     "tsgo-bundle": "./bin/cli.cjs"
